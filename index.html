@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Multipli-Héros ⚡</title>
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --secondary: #2196F3;
+            --accent: #FF9800;
+            --danger: #f44336;
+            --bg: #eef2f5;
+            --card: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        #game-container {
+            background: var(--card);
+            width: 100%;
+            max-width: 450px;
+            min-height: 80vh;
+            margin: 10px;
+            padding: 25px;
+            border-radius: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            color: var(--secondary);
+            text-align: center;
+        }
+
+        /* --- CONFIGURATION --- */
+        #setup-area {
+            display: block;
+        }
+
+        .setup-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .table-btn {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f0f0;
+            border: 2px solid transparent;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .table-btn.selected {
+            background: var(--secondary);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .settings-row {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        input[type="number"] {
+            width: 70px;
+            height: 45px;
+            font-size: 1.2rem;
+            text-align: center;
+            border-radius: 10px;
+            border: 2px solid #ddd;
+        }
+
+        /* --- ZONE DE JEU --- */
+        #quiz-area {
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            flex-grow: 1;
+        }
+
+        .timer-container {
+            width: 100%;
+            height: 12px;
+            background: #eee;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        #timer-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, var(--accent), #ff5722);
+        }
+
+        .question-text {
+            font-size: 5rem;
+            font-weight: 800;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .answer-text {
+            font-size: 4.5rem;
+            text-align: center;
+            color: var(--primary);
+            font-weight: bold;
+            height: 5.5rem;
+            visibility: hidden;
+        }
+
+        /* --- BOUTONS --- */
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            margin-top: auto;
+        }
+
+        .choice-btns {
+            display: none;
+            gap: 15px;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 20px;
+            padding: 18px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .btn:active { transform: scale(0.96); }
+        .btn-start { background: var(--primary); }
+        .btn-reveal { background: var(--secondary); }
+        .btn-true { background: var(--primary); flex: 1; }
+        .btn-false { background: var(--danger); flex: 1; }
+
+        #status-msg {
+            text-align: center;
+            color: #777;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+
+        .btn-back {
+            background: none;
+            border: none;
+            color: #aaa;
+            text-decoration: underline;
+            padding: 10px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- ECRAN CONFIGURATION -->
+    <div id="setup-area">
+        <h1>Multipli-Héros ⚡</h1>
+        <p style="text-align: center; margin-bottom: 20px;">Choisis tes tables à réviser :</p>
+        <div class="setup-grid" id="table-picker"></div>
+        
+        <div class="settings-row">
+            <span>Secondes par calcul :</span>
+            <input type="number" id="duration" value="5" inputmode="numeric">
+        </div>
+        
+        <button class="btn btn-start" onclick="startGame()">Commencer !</button>
+    </div>
+
+    <!-- ECRAN JEU -->
+    <div id="quiz-area">
+        <div>
+            <div class="timer-container">
+                <div id="timer-bar"></div>
+            </div>
+            <div id="question" class="question-text">7 × 8</div>
+            <div id="answer" class="answer-text">56</div>
+        </div>
+        
+        <div class="btn-group">
+            <button id="btn-reveal" class="btn btn-reveal" onclick="revealAnswer()">J'ai trouvé !</button>
+            
+            <div id="choice-btns" class="choice-btns">
+                <button class="btn btn-false" onclick="handleAnswer(false)">Faux ❌</button>
+                <button class="btn btn-true" onclick="handleAnswer(true)">Vrai ✅</button>
+            </div>
+            
+            <div id="status-msg">Dépêche-toi !</div>
+            <button class="btn-back" onclick="showSetup()">⬅ Retour aux réglages</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedTables = [];
+    let wrongPool = [];
+    let currentQ = {};
+    let duration = 5;
+    let timerInt = null;
+    let timerW = 100;
+
+    // Générer la grille de sélection
+    const picker = document.getElementById('table-picker');
+    for (let i = 1; i <= 10; i++) {
+        const d = document.createElement('div');
+        d.className = 'table-btn';
+        d.innerText = i;
+        d.onclick = () => d.classList.toggle('selected');
+        picker.appendChild(d);
+    }
+
+    function showSetup() {
+        // Arrête tout et retourne à l'intro
+        clearInterval(timerInt);
+        document.getElementById('quiz-area').style.display = 'none';
+        document.getElementById('setup-area').style.display = 'block';
+    }
+
+    function startGame() {
+        selectedTables = Array.from(document.querySelectorAll('.table-btn.selected')).map(el => parseInt(el.innerText));
+        if (selectedTables.length === 0) {
+            alert("Sélectionne au moins une table !");
+            return;
+        }
+        
+        duration = parseInt(document.getElementById('duration').value) || 5;
+        document.getElementById('setup-area').style.display = 'none';
+        document.getElementById('quiz-area').style.display = 'flex';
+        nextQuestion();
+    }
+
+    function nextQuestion() {
+        // Reset UI
+        document.getElementById('answer').style.visibility = 'hidden';
+        document.getElementById('btn-reveal').style.display = 'block';
+        document.getElementById('choice-btns').style.display = 'none';
+        document.getElementById('status-msg').innerText = "Vite !";
+
+        // Choisir la question (priorité aux erreurs 40% du temps)
+        if (wrongPool.length > 0 && Math.random() < 0.4) {
+            currentQ = wrongPool[Math.floor(Math.random() * wrongPool.length)];
+        } else {
+            const a = selectedTables[Math.floor(Math.random() * selectedTables.length)];
+            const b = Math.floor(Math.random() * 10) + 1;
+            currentQ = { a, b, ans: a * b };
+        }
+
+        document.getElementById('question').innerText = `${currentQ.a} × ${currentQ.b}`;
+        document.getElementById('answer').innerText = currentQ.ans;
+        startTimer();
+    }
+
+    function startTimer() {
+        clearInterval(timerInt);
+        timerW = 100;
+        const bar = document.getElementById('timer-bar');
+        const step = 100 / (duration * 10);
+
+        timerInt = setInterval(() => {
+            timerW -= step;
+            bar.style.width = timerW + "%";
+            if (timerW <= 0) {
+                revealAnswer();
+            }
+        }, 100);
+    }
+
+    function revealAnswer() {
+        clearInterval(timerInt);
+        document.getElementById('timer-bar').style.width = "0%";
+        document.getElementById('answer').style.visibility = 'visible';
+        document.getElementById('btn-reveal').style.display = 'none';
+        document.getElementById('choice-btns').style.display = 'flex';
+        document.getElementById('status-msg').innerText = "C'était correct ?";
+    }
+
+    function handleAnswer(isCorrect) {
+        if (isCorrect) {
+            // Enlever de la liste des erreurs si réussi
+            wrongPool = wrongPool.filter(q => !(q.a === currentQ.a && q.b === currentQ.b));
+        } else {
+            // Ajouter à la liste des erreurs si raté
+            if (!wrongPool.some(q => q.a === currentQ.a && q.b === currentQ.b)) {
+                wrongPool.push({...currentQ});
+            }
+        }
+        nextQuestion();
+    }
+</script>
+
+</body>
+</html>
